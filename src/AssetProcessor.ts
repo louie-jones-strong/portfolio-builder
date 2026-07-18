@@ -177,7 +177,7 @@ function CompressCss(text: string): string {
 		.replace(/\/\*.+?\*\//g, "")
 		.replace(/[\r\n]/g, "")
 		.replace(/\t/g, "")
-		.replace(/ /g, "");
+	// .replace(/ /g, "");
 }
 
 function CompressJs(text: string): string {

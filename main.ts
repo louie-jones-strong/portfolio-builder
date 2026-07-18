@@ -19,7 +19,7 @@ function parseCliArgs(): CliConfig {
 	const args = process.argv.slice(2);
 
 	const config: CliConfig = {
-		projectRoot: process.cwd(),
+		projectRoot: "",
 		configDir: "config",
 		release: args.includes("--release"),
 		clean: args.includes("--clean"),

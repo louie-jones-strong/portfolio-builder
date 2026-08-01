@@ -18,12 +18,16 @@
 	"files": [
 		"main.ts",
 		"src/**/*.ts",
+		"lint-config/**/*",
 		"README.md"
 	],
 	"scripts": {
 		"typecheck": "bun run --bun tsc --noEmit",
 		"test": "bun test",
 		"test:ci": "node -e \"const fs=require('fs');const path=require('path');let found=false;const walk=(d)=>{for(const e of fs.readdirSync(d,{withFileTypes:true})){if(e.name==='node_modules'||e.name==='.git')continue;const p=path.join(d,e.name);if(e.isDirectory()){walk(p);if(found)return;}else if(/(\\.test\\.|\\.spec\\.|_test_|_spec_)/.test(e.name)){found=true;return;}}};walk('.');if(found){require('child_process').execSync('bun test',{stdio:'inherit'});}else{console.log('No test files found; skipping tests.');}\"",
+		"lint:text": "textlint \"**/*.{md,txt}\"",
+		"lint:prose": "vale .",
+		"lint:docs": "bun run lint:text && bun run lint:prose",
 		"prepublishOnly": "bun run typecheck && bun run test:ci",
 		"dev": "bun run main.ts"
 	},
@@ -41,9 +45,14 @@
 	"license": "MIT",
 	"dependencies": {
 		"ejs": "^3.1.10",
+		"@jti/vale": "^1.2.1",
 		"sass": "^1.55.0",
 		"sharp": "^0.31.0",
-		"puppeteer-core": "^24.37.5"
+		"puppeteer-core": "^24.37.5",
+		"textlint": "^15.7.1",
+		"textlint-rule-common-misspellings": "^1.0.1",
+		"textlint-rule-no-dead-link": "^6.2.3",
+		"textlint-rule-terminology": "^5.2.16"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",
@@ -53,5 +62,8 @@
 	"engines": {
 		"bun": ">=1.0.0",
 		"node": ">=18.0.0"
-	}
+	},
+	"trustedDependencies": [
+		"@jti/vale"
+	]
 }

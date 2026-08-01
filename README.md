@@ -30,6 +30,51 @@ Then use the CLI:
 bunx portfolio-builder
 ```
 
+By default, the build process runs prose linting before generating files.
+
+- If your project has `.textlintrc.json` and/or `.vale.ini`, those local configs are used.
+- Otherwise, the package falls back to built-in default configs shipped with `portfolio-builder`.
+
+Use `--skip-lint` to bypass lint checks for a run.
+
+### Lint Overrides In Your Project
+
+You can define lint behavior in your project at:
+
+`/.portfolio-builder/lint-overrides.json`
+
+Supported keys:
+
+- `textlintEnabled` (boolean)
+- `textlintConfigPath` (string, absolute or project-relative)
+- `textlintIgnorePath` (string, absolute or project-relative)
+- `textlintTarget` (string, glob passed to Textlint)
+- `valeEnabled` (boolean)
+- `valeConfigPath` (string, absolute or project-relative)
+- `valeTarget` (string, path/glob passed to Vale)
+
+Example: do not lint `.md` files in the project root
+
+1. Create `.portfolio-builder/lint-overrides.json`:
+
+```json
+{
+  "textlintIgnorePath": ".portfolio-builder/.textlintignore",
+  "valeTarget": "docs"
+}
+```
+
+2. Create `.portfolio-builder/.textlintignore`:
+
+```text
+/*.md
+```
+
+Notes:
+
+- `/*.md` excludes only Markdown files at the repository root for Textlint.
+- `valeTarget: "docs"` tells Vale to lint only the `docs` folder, so root `.md` files are not linted by Vale.
+
 
 ## Project Structure
 
@@ -158,3 +203,24 @@ Example template:
 </body>
 </html>
 ```
+
+## Prose Linting
+
+Use these commands to lint documentation and prose:
+
+```bash
+# Run Textlint against Markdown and text files
+bun run lint:text
+
+# Run Vale checks in this repository
+bun run lint:prose
+
+# Run both linters
+bun run lint:docs
+```
+
+Notes:
+
+- Project-level Textlint config: [.textlintrc.json](.textlintrc.json)
+- Project-level Vale config: [.vale.ini](.vale.ini)
+- Built-in fallback configs are under [lint-config/.textlintrc.json](lint-config/.textlintrc.json) and [lint-config/.vale.ini](lint-config/.vale.ini)

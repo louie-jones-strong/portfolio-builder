@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { parseArgs } from "util";
-import { existsSync, readFileSync } from "fs";
+import { appendFileSync, existsSync, readFileSync } from "fs";
 import { dirname, isAbsolute, join } from "path";
 import { execSync } from "child_process";
 import { createRequire } from "module";
@@ -122,18 +122,54 @@ function resolveProjectPath(rootPath: string, inputPath: string): string {
 	return isAbsolute(inputPath) ? inputPath : join(rootPath, inputPath);
 }
 
-function runLintCommand(command: string, label: string, cwd: string): void {
+function writeLintLog(rootPath: string, label: string, output: string, status?: number | string): void {
+	const logPath = join(rootPath, "portfolio-builder.log");
+	const timestamp = new Date().toISOString();
+	const header = `\n===== ${label} ${timestamp} =====\n`;
+	const tail = typeof status === "number" || typeof status === "string"
+		? `\n[exit code ${status}]\n`
+		: "\n";
+
+	try {
+		appendFileSync(logPath, `${header}${output}${tail}`, "utf8");
+	} catch (error) {
+		console.warn(`⚠️ Unable to write lint log to ${logPath}:`, error);
+	}
+}
+
+function runLintCommand(command: string, label: string, cwd: string, rootPath: string): void {
 	const shell = process.platform === "win32" ? "cmd.exe" : "/bin/sh";
 	try {
-		execSync(command, {
+		const output = execSync(command, {
 			cwd,
-			stdio: "inherit",
+			encoding: "utf8",
+			stdio: ["ignore", "pipe", "pipe"],
 			shell,
 		});
+		if (output.trim()) {
+			process.stdout.write(output);
+		}
+		writeLintLog(rootPath, label, output.trim(), 0);
 	} catch (error: unknown) {
-		const status = error && typeof error === "object" && "status" in error && typeof (error as { status?: unknown }).status === "number"
-			? (error as { status: number }).status
-			: "unknown";
+		let output = "";
+		let status: number | string | undefined;
+
+		if (error && typeof error === "object") {
+			if ("stdout" in error && typeof (error as { stdout?: unknown }).stdout === "string") {
+				output += (error as { stdout: string }).stdout;
+			}
+			if ("stderr" in error && typeof (error as { stderr?: unknown }).stderr === "string") {
+				output += (error as { stderr: string }).stderr;
+			}
+			if ("status" in error && typeof (error as { status?: unknown }).status === "number") {
+				status = (error as { status: number }).status;
+			}
+		}
+
+		if (output.trim()) {
+			process.stdout.write(output);
+		}
+		writeLintLog(rootPath, label, output.trim(), status ?? "unknown");
 		console.warn(`⚠️ ${label} reported issues. Continuing build${typeof status === "number" ? ` (exit code ${status})` : ""}.`);
 	}
 }
@@ -196,6 +232,7 @@ function runProseLint(rootPath: string, skipLint: boolean): void {
 			`${textlintCommand} "${textlintTarget}" --config "${textlintConfigPath}" --ignore-path "${textlintIgnorePath}"`,
 			"Textlint",
 			rootPath,
+			rootPath,
 		);
 	}
 
@@ -206,6 +243,7 @@ function runProseLint(rootPath: string, skipLint: boolean): void {
 		runLintCommand(
 			`${valeCommand} "${valeTarget}" --config "${valeConfigPath}"`,
 			"Vale",
+			rootPath,
 			rootPath,
 		);
 	}

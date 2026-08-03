@@ -123,11 +123,12 @@ function resolveProjectPath(rootPath: string, inputPath: string): string {
 }
 
 function runLintCommand(command: string, label: string, cwd: string): void {
+	const shell = process.platform === "win32" ? "cmd.exe" : "/bin/sh";
 	try {
 		execSync(command, {
 			cwd,
 			stdio: "inherit",
-			shell: process.platform === "win32" ? "cmd.exe" : true,
+			shell,
 		});
 	} catch (error: unknown) {
 		const status = error && typeof error === "object" && "status" in error && typeof (error as { status?: unknown }).status === "number"

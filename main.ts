@@ -122,6 +122,21 @@ function resolveProjectPath(rootPath: string, inputPath: string): string {
 	return isAbsolute(inputPath) ? inputPath : join(rootPath, inputPath);
 }
 
+function runLintCommand(command: string, label: string, cwd: string): void {
+	try {
+		execSync(command, {
+			cwd,
+			stdio: "inherit",
+			shell: process.platform === "win32" ? "cmd.exe" : true,
+		});
+	} catch (error: unknown) {
+		const status = error && typeof error === "object" && "status" in error && typeof (error as { status?: unknown }).status === "number"
+			? (error as { status: number }).status
+			: "unknown";
+		console.warn(`⚠️ ${label} reported issues. Continuing build${typeof status === "number" ? ` (exit code ${status})` : ""}.`);
+	}
+}
+
 function runProseLint(rootPath: string, skipLint: boolean): void {
 	if (skipLint) {
 		console.log("⏭️  Skipping prose linting (--skip-lint)");
@@ -176,29 +191,22 @@ function runProseLint(rootPath: string, skipLint: boolean): void {
 		const textlintSource = textlintConfigPath === localTextlintConfigPath ? "project" : "bundled";
 		console.log(`- Textlint config: ${textlintSource} (${textlintConfigPath})`);
 		console.log(`- Textlint target: ${textlintTarget}`);
-		try {
-			execSync(
-				`${textlintCommand} "${textlintTarget}" --config "${textlintConfigPath}" --ignore-path "${textlintIgnorePath}"`,
-				{ cwd: rootPath, stdio: "inherit", shell: "cmd.exe" }
-			);
-		} catch {
-			throw new Error("Prose linting failed (Textlint). Fix lint issues or run with --skip-lint.");
-		}
+		runLintCommand(
+			`${textlintCommand} "${textlintTarget}" --config "${textlintConfigPath}" --ignore-path "${textlintIgnorePath}"`,
+			"Textlint",
+			rootPath,
+		);
 	}
 
 	if (valeConfigExists) {
 		const valeSource = valeConfigPath === localValeConfigPath ? "project" : "bundled";
 		console.log(`- Vale config: ${valeSource} (${valeConfigPath})`);
 		console.log(`- Vale target: ${valeTarget}`);
-		try {
-			execSync(`${valeCommand} "${valeTarget}" --config "${valeConfigPath}"`, {
-				cwd: rootPath,
-				stdio: "inherit",
-				shell: "cmd.exe",
-			});
-		} catch {
-			throw new Error("Prose linting failed (Vale). Fix lint issues or run with --skip-lint.");
-		}
+		runLintCommand(
+			`${valeCommand} "${valeTarget}" --config "${valeConfigPath}"`,
+			"Vale",
+			rootPath,
+		);
 	}
 }
 

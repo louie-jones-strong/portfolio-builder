@@ -5,6 +5,7 @@ import { AssetProcessor } from "./AssetProcessor";
 import { TryMakeDir } from "./utils";
 import { PostProcessProjectConfig } from "./ConfigProcessor";
 import { GenerateCV } from "./CVGenerator";
+import { Logger } from "./logger";
 
 type GenericRecord = Record<string, any>;
 
@@ -22,6 +23,7 @@ export interface PortfolioConfig {
 	projectConfig: GenericRecord;
 	iconsConfig: GenericRecord;
 	cvConfig?: GenericRecord;
+	logger: Logger;
 }
 
 export class PortfolioBuilder {
@@ -45,6 +47,7 @@ export class PortfolioBuilder {
 			siteConfig: config.siteConfig,
 			projectConfig: config.projectConfig,
 			iconsConfig: config.iconsConfig,
+			logger: config.logger,
 		});
 
 		this.assetProcessor = new AssetProcessor(
@@ -52,14 +55,14 @@ export class PortfolioBuilder {
 			config.onlyCopyNew,
 			config.pathToRoot,
 			config.rawStaticFolder,
-			config.siteConfig.AssetConfig
+			config.siteConfig.AssetConfig,
+			config.logger
 		);
 	}
 
 	async Build(): Promise<void> {
 		if (this.config.cleanBuild) {
-			console.log();
-			console.log("🧹 Cleaning Output Folder...");
+			this.config.logger.info("Cleaning Output Folder...");
 			const outputPath = join(this.config.pathToRoot, this.config.outputViewsFolder);
 			if (existsSync(outputPath)) {
 				rmSync(outputPath, { recursive: true });
@@ -91,8 +94,7 @@ export class PortfolioBuilder {
 			return;
 		}
 
-		console.log();
-		console.log("📄 Generating CV...");
+		this.config.logger.info("Generating CV...");
 
 		const cvHtmlPath = join(this.config.pathToRoot, this.config.outputViewsFolder, "CV.html");
 		const cvPdfPath = join(this.config.pathToRoot, this.config.outputViewsFolder, "CV.pdf");
@@ -116,12 +118,12 @@ export class PortfolioBuilder {
 			cssSourcePath,
 			htmlOutputPath: cvHtmlPath,
 			pdfOutputPath: cvPdfPath,
+			logger: this.config.logger,
 		});
 	}
 
 	private BuildAssets(): void {
-		console.log();
-		console.log("🎨 Building Assets...");
+		this.config.logger.info("Building Assets...");
 
 		const sourcePath = join(this.config.pathToRoot, this.config.rawStaticFolder);
 		const outputPath = join(this.config.pathToRoot, this.config.outputStaticFolder);
@@ -130,8 +132,7 @@ export class PortfolioBuilder {
 	}
 
 	private async BuildPages(): Promise<void> {
-		console.log();
-		console.log("📝 Building Pages...");
+		this.config.logger.info("Building Pages...");
 
 		// Build project pages
 		for (const projectKey of Object.keys(this.config.projectConfig)) {
@@ -146,8 +147,7 @@ export class PortfolioBuilder {
 	}
 
 	private CopyNonEJSFiles(): void {
-		console.log();
-		console.log("📋 Copying Non-EJS Files...");
+		this.config.logger.info("Copying Non-EJS Files...");
 
 		const sourcePath = join(this.config.pathToRoot, this.config.rawViewsFolder);
 		const outputPath = join(this.config.pathToRoot, this.config.outputViewsFolder);

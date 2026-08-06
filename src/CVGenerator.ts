@@ -3,6 +3,8 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync } from
 import { join, dirname } from "path";
 import puppeteer from "puppeteer-core";
 
+import { Logger } from "./logger";
+
 type GenericRecord = Record<string, any>;
 
 function findChromePath(): string | null {
@@ -32,6 +34,7 @@ export interface CVGeneratorConfig {
 	cssSourcePath: string;
 	htmlOutputPath: string;
 	pdfOutputPath: string;
+	logger: Logger;
 }
 
 export async function GenerateCV(config: CVGeneratorConfig): Promise<void> {
@@ -53,7 +56,7 @@ export async function GenerateCV(config: CVGeneratorConfig): Promise<void> {
 	// 2. Write HTML
 	mkdirSync(dirname(config.htmlOutputPath), { recursive: true });
 	writeFileSync(config.htmlOutputPath, html, "utf-8");
-	console.log("  ✅ CV HTML:", config.htmlOutputPath);
+	config.logger.info(`CV HTML: ${config.htmlOutputPath}`);
 
 	// 3. Copy CSS
 	const cssOutputDir = join(dirname(config.htmlOutputPath), "Public", "css", "Optional");
@@ -63,7 +66,7 @@ export async function GenerateCV(config: CVGeneratorConfig): Promise<void> {
 	// 4. Generate PDF
 	const executablePath = findChromePath();
 	if (!executablePath) {
-		console.warn("  ⚠️  No Chromium/Chrome found – skipping PDF generation");
+		config.logger.warn("No Chromium/Chrome found – skipping PDF generation");
 		return;
 	}
 
@@ -81,7 +84,7 @@ export async function GenerateCV(config: CVGeneratorConfig): Promise<void> {
 			margin: { top: "0", right: "0", bottom: "0", left: "0" },
 		});
 		writeFileSync(config.pdfOutputPath, pdfBuffer);
-		console.log("  ✅ CV PDF:", config.pdfOutputPath);
+		config.logger.info(`CV PDF: ${config.pdfOutputPath}`);
 	} finally {
 		await browser.close();
 	}

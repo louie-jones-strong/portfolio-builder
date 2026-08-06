@@ -3,6 +3,7 @@ import { renderFile } from "ejs";
 import { statSync, writeFileSync } from "fs";
 import { CompressHtml } from "./AssetProcessor";
 import { MakePathRelative, TryMakeDir } from "./utils";
+import { Logger } from "./logger";
 
 type GenericRecord = Record<string, any>;
 
@@ -15,6 +16,7 @@ export interface TemplateConfig {
 	siteConfig: GenericRecord;
 	projectConfig: GenericRecord;
 	iconsConfig: GenericRecord;
+	logger: Logger;
 }
 
 export class TemplateRenderer {
@@ -33,7 +35,7 @@ export class TemplateRenderer {
 
 		const stat = statSync(sourceFilePath);
 		if (!stat.isFile()) {
-			console.error("❌ Cannot build folder:", sourceFilePath);
+			this.config.logger.error(`Cannot build folder: ${sourceFilePath}`);
 			return;
 		}
 
@@ -62,7 +64,7 @@ export class TemplateRenderer {
 	}
 
 	private async RenderFile(sourceFile: string, outputFile: string, data: GenericRecord): Promise<void> {
-		console.log(`  📄 ${MakePathRelative(sourceFile, this.config.pathToRoot)} → ${MakePathRelative(outputFile, this.config.pathToRoot)}`);
+		this.config.logger.info(`${MakePathRelative(sourceFile, this.config.pathToRoot)} → ${MakePathRelative(outputFile, this.config.pathToRoot)}`);
 
 		try {
 			let html = await renderFile(sourceFile, data);
@@ -73,7 +75,7 @@ export class TemplateRenderer {
 
 			writeFileSync(outputFile, html);
 		} catch (error) {
-			console.error("❌ Render error:", error);
+			this.config.logger.error(`Render error: ${error}`);
 		}
 	}
 }

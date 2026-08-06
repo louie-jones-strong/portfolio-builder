@@ -4,6 +4,8 @@ import sharp from "sharp";
 import * as sass from "sass";
 import { RemoveExtension, TryMakeDir } from "./utils";
 
+import { Logger } from "./logger";
+
 type GenericRecord = Record<string, any>;
 
 export interface AssetConfig {
@@ -24,24 +26,27 @@ export class AssetProcessor {
 	private readonly pathToRoot: string;
 	private readonly rawStaticFolder: string;
 	private readonly assetConfig: AssetConfig;
+	private readonly logger: Logger;
 
 	constructor(
 		compress: boolean,
 		onlyCopyNew: boolean,
 		pathToRoot: string,
 		rawStaticFolder: string,
-		assetConfig: AssetConfig
+		assetConfig: AssetConfig,
+		logger: Logger
 	) {
 		this.compress = compress;
 		this.onlyCopyNew = onlyCopyNew;
 		this.pathToRoot = pathToRoot;
 		this.rawStaticFolder = rawStaticFolder;
 		this.assetConfig = assetConfig;
+		this.logger = logger;
 	}
 
 	HandleFolder(inputPath: string, outputPath: string): void {
 		if (this.isFolderToSkip(inputPath)) {
-			console.log("⏭️  Skip folder: " + inputPath);
+			this.logger.info("Skip folder: " + inputPath);
 			return;
 		}
 
@@ -125,7 +130,7 @@ export class AssetProcessor {
 					while (width < horizontalResGroups[outputRezIndex]) {
 						const outputPath = `${noExtensionPath}_${horizontalResGroups[outputRezIndex]}.${imageFormats[f]}`;
 						sharp(inputPath).toFile(outputPath).catch((error: unknown) => {
-							console.error("Image Convert Error:", error);
+							this.logger.error(`Image Convert Error: ${error}`);
 						});
 						outputRezIndex -= 1;
 					}
@@ -135,7 +140,7 @@ export class AssetProcessor {
 						if (newWidth < horizontalResGroups[outputRezIndex]) {
 							const outputPath = `${noExtensionPath}_${horizontalResGroups[outputRezIndex]}.${imageFormats[f]}`;
 							sharp(inputPath).resize(width).toFile(outputPath).catch((error: unknown) => {
-								console.error("Image Convert Error:", error);
+								this.logger.error(`Image Convert Error: ${error}`);
 							});
 							width = newWidth;
 							outputRezIndex -= 1;
@@ -157,7 +162,7 @@ export class AssetProcessor {
 		try {
 			copyFileSync(inputPath, outputPath);
 		} catch (error) {
-			console.error("File copy error:", error);
+			this.logger.error(`File copy error: ${error}`);
 		}
 	}
 }

@@ -3,7 +3,6 @@
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { PortfolioBuilder } from "./src/PortfolioBuilder";
-import { runTextLinting } from "./src/TextLinter";
 import { Logger } from "./src/logger";
 
 const logger = new Logger({
